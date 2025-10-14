@@ -206,6 +206,7 @@ export function depositToSavings(amount: number) {
   if (gameState.accounts.wallet >= amount && amount > 0) {
     gameState.accounts.wallet -= amount;
     gameState.accounts.savings += amount;
+    updateMood(2);
     consumeAP(1);
     return true;
   }
@@ -217,6 +218,7 @@ export function invest(amount: number) {
   if (gameState.accounts.wallet >= amount && amount > 0) {
     gameState.accounts.wallet -= amount;
     gameState.accounts.investment += amount;
+    updateMood(2);
     consumeAP(1);
     return true;
   }
@@ -228,7 +230,7 @@ export function partTime() {
   if (gameState.ap < 2) return false;
   const earn = 60 + Math.floor(Math.random() * 121); // 60-180
   gameState.accounts.wallet += earn;
-  gameState.mood = Math.max(0, (gameState.mood ?? 100) - 10);
+  updateMood(-10);
   consumeAP(2);
   return earn;
 }
@@ -239,10 +241,12 @@ export function study() {
   if (gameState.ap < 2) return false;
   const before = gameState.incomeBonus;
   const after = Math.min(INCOME_BONUS_CAP, before + 50);
+  updateMood(1);
   if (after === before) {
     // 已达上限，不消耗AP
     return false;
   }
+  updateMood(2);
   gameState.incomeBonus = after;
   consumeAP(2);
   return true;

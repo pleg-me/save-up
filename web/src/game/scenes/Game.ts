@@ -39,28 +39,49 @@ export class Game extends Scene
         this.drawMap();
 
         // 顶部 HUD 与心情条已由 Vue 面板接管展示，移除 Phaser 内置 HUD
-
-        // 心情自然衰减逻辑：
+        // 心情自然变化逻辑：
         // - 心情 > 150：每秒 -1
         // - 心情 101~149：每 2 秒 -1
-        // - 不低于 100
+        // - 心情 51~99：每 2 秒 +1
+        // - 心情 <= 50：每秒 +1
+        // - 不低于/不高于 100（向 100 回归）
         let moodSlowCounter = 0;
+        let moodRecoverCounter = 0;
         this.time.addEvent({
             delay: 1000,
             loop: true,
             callback: () => {
                 const m = gameState.mood ?? 100;
-                if (m > 150) {
+                if (m >= 141) {
+                    // 高心情快速回落：每秒 -1，回归至 100
                     gameState.mood = Math.max(100, m - 1);
                     EventBus.emit('game-state-updated');
+                    moodRecoverCounter = 0;
                 } else if (m > 100) {
+                    // 高心情慢速回落：每 2 秒 -1，回归至 100
                     moodSlowCounter += 1;
                     if (moodSlowCounter % 2 === 0) {
                         gameState.mood = Math.max(100, m - 1);
                         EventBus.emit('game-state-updated');
                     }
-                } else {
+                    moodRecoverCounter = 0;
+                } else if (m <= 50) {
+                    // 低心情快速恢复：每秒 +1，回归至 100
+                    gameState.mood = Math.min(100, m + 1);
+                    EventBus.emit('game-state-updated');
                     moodSlowCounter = 0;
+                } else if (m < 100) {
+                    // 低心情慢速恢复：每 2 秒 +1，回归至 100
+                    moodRecoverCounter += 1;
+                    if (moodRecoverCounter % 2 === 0) {
+                        gameState.mood = Math.min(100, m + 1);
+                        EventBus.emit('game-state-updated');
+                    }
+                    moodSlowCounter = 0;
+                } else {
+                    // m === 100，归零计数器
+                    moodSlowCounter = 0;
+                    moodRecoverCounter = 0;
                 }
             }
         });
