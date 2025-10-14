@@ -1,6 +1,6 @@
 import { Scene } from 'phaser';
 import { Settings } from '../data/Settings';
-import { Buildings } from '../data/BuildingsData';
+import { DefaultMap } from '../data/DefaultMap';
 
 export class Preloader extends Scene
 {
@@ -38,10 +38,10 @@ export class Preloader extends Scene
         this.load.image('star', 'star.png');
 
         //  预加载建筑图片资源（键为建筑 key）
-        Buildings.forEach(b => {
-            this.load.image(b.key, `buildings/${b.key}.png`);
+        DefaultMap.geoItems.forEach(b => {
+            this.load.image(b.key, `geo_items/${b.key}.png`);
         });
-        this.load.image('bg_map_buildings', 'buildings/bg_map.png');
+        this.load.image('default_map', 'geo_items/default_map.png');
     }
 
     create ()

@@ -1,8 +1,9 @@
 import { EventBus } from '../EventBus';
 import { Scene } from 'phaser';
-import { BuildingInfo, Buildings } from '../data/BuildingsData';
 import { gameState, initNewGame, startMonth, endMonth, depositToSavings, invest, partTime, study, consumeCash, depositEmergency, payFirstNecessaryExpense, resolveFirstUnexpected, isVictoryAchieved } from '../state/GameState';
 import { ConsumptionAction, consumptionActions } from '../data/ActionsData';
+import { DefaultMap } from '../data/DefaultMap';
+import { IGeoItem } from '../../models/GeoItem';
 
 export class Game extends Scene
 {
@@ -10,7 +11,7 @@ export class Game extends Scene
     background: Phaser.GameObjects.Image;
     fascinatePalette: number[] = [0xff4081, 0xff9800, 0x9c27b0, 0xf44336, 0x00bcd4]; // 诱消费主题色
     fascinateHoverPalette: number[] = [0xff6ea1, 0xffb74d, 0xba68c8, 0xef5350, 0x26c6da];
-    buildings = Buildings;
+    geoItems = DefaultMap.geoItems;
     necessaryList: Phaser.GameObjects.Text[] = [];
     unexpectedList: Phaser.GameObjects.Text[] = [];
     consumptionBtns: Phaser.GameObjects.Text[] = [];
@@ -25,7 +26,7 @@ export class Game extends Scene
         this.camera = this.cameras.main;
         this.camera.setBackgroundColor(0x898989);
 
-        this.background = this.add.image(512, 512, 'bg_map_buildings');
+        this.background = this.add.image(512, 512, 'default_map');
         //this.background.setAlpha(0.4);
 
         // 确保有开局身份与目标（避免月初生成必要支出为空）
@@ -778,7 +779,7 @@ export class Game extends Scene
             const centerStartX = margin + tileSize / 2;
             const centerStartY = margin + tileSize / 2 + yOffset;
             const maskKey = this.ensureRadialMaskTexture();
-            this.buildings.forEach((b, i) => {
+            this.geoItems.forEach((b, i) => {
                 const row = Math.floor(i / grid);
                 const col = i % grid;
                 b.centerX = centerStartX + col * (tileSize + gap);
@@ -810,25 +811,25 @@ export class Game extends Scene
     private handleConsumption(action: ConsumptionAction) {
         consumeCash(action.cost, action.happyPoints);
         const msg = action.random[Math.floor(Math.random() * action.random.length)];
-        const building = this.buildings.find(b => b.key === action.buildingKey);
+        const building = this.geoItems.find(b => b.key === action.buildingKey);
         if(building){
-            this.highlightBuilding(building);
-            this.showMessageOnBuilding(building, msg);
+            this.highlightGeoItem(building);
+            this.showMessageOnGeoItem(building, msg);
         }
         EventBus.emit('game-state-updated');
         this.refreshConsumptionBtns();
     }
 
-    private highlightBuilding(building: BuildingInfo) {
-        if (building) {
-            const img = this.children.getByName(building.key) as Phaser.GameObjects.Image;
+    private highlightGeoItem(geoItem: IGeoItem) {
+        if (geoItem) {
+            const img = this.children.getByName(geoItem.key) as Phaser.GameObjects.Image;
             if (img) {
                 // 清除可能存在的旧色调
                 img.clearTint();
 
                 // 使用环形柔光纹理，避免出现可见的同心圆线条
                 const ringKey = this.ensureRingGlowTexture();
-                const glow = this.add.image(building.centerX, building.centerY, ringKey);
+                const glow = this.add.image(geoItem.centerX, geoItem.centerY, ringKey);
                 glow.setDepth(5.5); // 位于建筑之上、标签之下
                 glow.setBlendMode(Phaser.BlendModes.ADD);
                 glow.setAlpha(0.0);
@@ -850,9 +851,9 @@ export class Game extends Scene
         }
     }
 
-    private showMessageOnBuilding(building: BuildingInfo, msg: string) {
-        if (building) {
-            const msgObj = this.add.text(building.centerX, building.centerY - 20, msg, {
+    private showMessageOnGeoItem(geoItem: IGeoItem, msg: string) {
+        if (geoItem) {
+            const msgObj = this.add.text(geoItem.centerX, geoItem.centerY - 20, msg, {
                 fontFamily: 'Arial',
                 fontSize: 14,
                 color: '#ffffff',
