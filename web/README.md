@@ -241,3 +241,44 @@ Created by [Phaser Studio](mailto:support@phaser.io). Powered by coffee, anime, 
 The Phaser logo and characters are &copy; 2011 - 2025 Phaser Studio Inc.
 
 All rights reserved.
+
+## hero sprite
+
+已生成资源
+
+- 新增 web/public/assets/characters/mini-hero.svg ，尺寸 96x128 ，含 12 帧（3 列 x 4 行，每帧 32x32 ）。
+- 在 Preloader 场景中已加载并注册全局动画，键名为：
+  - hero-walk-down / hero-idle-down （帧 0–2）
+  - hero-walk-left / hero-idle-left （帧 3–5）
+  - hero-walk-right / hero-idle-right （帧 6–8）
+  - hero-walk-up / hero-idle-up （帧 9–11）
+路径与加载
+
+- 资源路径： web/public/assets/characters/mini-hero.svg
+- 预加载： web/src/game/scenes/Preloader.ts 中添加了
+  - this.load.spritesheet('hero', 'characters/mini-hero.svg', { frameWidth: 32, frameHeight: 32 });
+  - 四方向行走与静止动画 this.anims.create(...)
+如何在任意场景中使用
+
+- 在你的场景 create() 中添加角色与键盘控制示例（不改动现有逻辑时建议单独测试）：
+  - 创建角色： const player = this.add.sprite(512, 512, 'hero').play('hero-idle-down');
+  - 键盘： const cursors = this.input.keyboard.createCursorKeys();
+  - 在 update() 中按方向键移动与切换动画：
+    - 下： player.y += speed; player.play('hero-walk-down', true);
+    - 上： player.y -= speed; player.play('hero-walk-up', true);
+    - 左： player.x -= speed; player.play('hero-walk-left', true);
+    - 右： player.x += speed; player.play('hero-walk-right', true);
+    - 无输入： player.play('hero-idle-<dir>', true); （保持上次方向）
+示例代码片段（可复制进任意场景进行快速验证）：
+
+- create() :
+  - const player = this.add.sprite(512, 512, 'hero');
+  - player.play('hero-idle-down');
+  - this.input.keyboard && (this as any).cursors = this.input.keyboard.createCursorKeys();
+- update() :
+  - const cursors = (this as any).cursors; const speed = 2; let moved = false;
+  - if (cursors.left?.isDown) { player.x -= speed; player.play('hero-walk-left', true); moved = true; }
+  - else if (cursors.right?.isDown) { player.x += speed; player.play('hero-walk-right', true); moved = true; }
+  - else if (cursors.up?.isDown) { player.y -= speed; player.play('hero-walk-up', true); moved = true; }
+  - else if (cursors.down?.isDown) { player.y += speed; player.play('hero-walk-down', true); moved = true; }
+  - if (!moved) player.play('hero-idle-down', true);

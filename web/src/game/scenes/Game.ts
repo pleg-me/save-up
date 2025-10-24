@@ -4,6 +4,9 @@ import { gameState, initNewGame, startMonth, endMonth, depositToSavings, invest,
 import { ConsumptionAction, consumptionActions } from '../data/ActionsData';
 import { DefaultMap } from '../data/DefaultMap';
 import { IGeoItem } from '../../models/GeoItem';
+import { PathUtils } from '../../tools/PathUtils';
+import { Settings } from '../data/Settings';
+import { LocaleUtils } from '../../tools/LocaleUtils';
 
 export class Game extends Scene
 {
@@ -15,7 +18,17 @@ export class Game extends Scene
     necessaryList: Phaser.GameObjects.Text[] = [];
     unexpectedList: Phaser.GameObjects.Text[] = [];
     consumptionBtns: Phaser.GameObjects.Text[] = [];
-
+    hero: Phaser.GameObjects.Sprite;
+    pathNodes: {x: number, y: number}[] = [];
+    isMovingForward: boolean = true; // 跟踪移动方向：true为正向，false为反向
+    pauseMoving: boolean = false; // 暂停移动标志
+    
+    // 添加气泡跟随系统相关属性
+    private activeBubbles: Array<{
+        container: Phaser.GameObjects.Container;
+        timer: Phaser.Time.TimerEvent;
+        offsetY: number;
+    }> = [];
     constructor ()
     {
         super('Game');
@@ -125,7 +138,7 @@ export class Game extends Scene
         const topY = 16;
         const topSpacing = 90;
         const bottomStartX = 60;
-        const bottomY = 960;
+        const bottomY = this.camera.height - 50; // 960
         const bottomSpacing = 128;
         let panelX = 10, panelY = 10;
 
@@ -683,8 +696,9 @@ export class Game extends Scene
         });
 
         // 日志面板由右侧 Vue 组件负责显示
-
         EventBus.emit('current-scene-ready', this);
+
+        this.installHero();
     }
 
     private computeGroupContainer(btns: Phaser.GameObjects.Text[], bgColor: number = 0x15496b, borderColor: number = 0x1976d2){
@@ -780,10 +794,10 @@ export class Game extends Scene
             const centerStartY = margin + tileSize / 2 + yOffset;
             const maskKey = this.ensureRadialMaskTexture();
             this.geoItems.forEach((b, i) => {
-                const row = Math.floor(i / grid);
-                const col = i % grid;
-                b.centerX = centerStartX + col * (tileSize + gap);
-                b.centerY = centerStartY + row * (tileSize + gap);
+                // const row = Math.floor(i / grid);
+                // const col = i % grid;
+                // b.centerX = centerStartX + col * (tileSize + gap);
+                // b.centerY = centerStartY + row * (tileSize + gap);
                 
                 const img = this.add.image(b.centerX, b.centerY, b.key);
                 img.setDepth(5);
@@ -809,12 +823,16 @@ export class Game extends Scene
     }
 
     private handleConsumption(action: ConsumptionAction) {
+        this.pauseMoving = true;
+        this.hero.stop();
         consumeCash(action.cost, action.happyPoints);
-        const msg = action.random[Math.floor(Math.random() * action.random.length)];
-        const building = this.geoItems.find(b => b.key === action.buildingKey);
-        if(building){
-            this.highlightGeoItem(building);
-            this.showMessageOnGeoItem(building, msg);
+        const geoItem = this.geoItems.find(b => b.key === action.buildingKey);
+        if(geoItem){
+            this.highlightGeoItem(geoItem);
+            
+            const msg = action.random[Math.floor(Math.random() * action.random.length)];
+            const newPos = geoItem.postions[Math.floor(Math.random() * geoItem.postions.length)];
+            this.placeHeroAt(newPos.x, newPos.y, msg, 3000);
         }
         EventBus.emit('game-state-updated');
         this.refreshConsumptionBtns();
@@ -853,19 +871,223 @@ export class Game extends Scene
 
     private showMessageOnGeoItem(geoItem: IGeoItem, msg: string) {
         if (geoItem) {
-            const msgObj = this.add.text(geoItem.centerX, geoItem.centerY - 20, msg, {
+            // 创建消息容器
+            const messageContainer = this.add.container(geoItem.centerX, geoItem.centerY - 30);
+            
+            // 创建文本对象来测量尺寸
+            const tempText = this.add.text(0, 0, msg, {
                 fontFamily: 'Arial',
                 fontSize: 14,
-                color: '#ffffff',
-                stroke: '#000000',
-                strokeThickness: 3,
+                color: '#ffffff'
             }).setOrigin(0.5);
-            msgObj.setDepth(10);
-            // 3 秒后移除消息
-            this.time.delayedCall(3000, () => {
-                msgObj.destroy();
+            
+            // 获取文本尺寸
+            const textWidth = tempText.width;
+            const textHeight = tempText.height;
+            
+            // 计算气泡尺寸（添加内边距）
+            const bubbleWidth = textWidth + 20;
+            const bubbleHeight = textHeight + 12;
+            
+            // 创建气泡背景
+            const bubble = this.add.graphics();
+            
+            // 绘制圆角矩形气泡
+            bubble.fillStyle(0xFF4500, 0.9); // 热情的橙红色背景，90%透明度
+            bubble.fillRoundedRect(-bubbleWidth/2, -bubbleHeight/2, bubbleWidth, bubbleHeight, 8);
+            
+            bubble.lineStyle(2, 0xFFFFFF, 1); // 白色边框，2像素宽度
+            bubble.strokeRoundedRect(-bubbleWidth/2, -bubbleHeight/2, bubbleWidth, bubbleHeight, 8);
+            
+            // 绘制气泡尖角（指向地理项目）
+            const triangleSize = 6;
+            bubble.fillStyle(0xFF4500, 0.9); // 重新设置填充样式为橙红色
+            bubble.fillTriangle(
+                -triangleSize, bubbleHeight/2,
+                triangleSize, bubbleHeight/2,
+                0, bubbleHeight/2 + triangleSize
+            );
+            
+            bubble.lineStyle(2, 0xffffff, 1); // 重新设置线条样式
+            bubble.strokeTriangle(
+                -triangleSize, bubbleHeight/2,
+                triangleSize, bubbleHeight/2,
+                0, bubbleHeight/2 + triangleSize
+            );
+            
+            // 重新创建文本对象（销毁临时的）
+            tempText.destroy();
+            const msgText = this.add.text(0, 0, msg, {
+                fontFamily: 'Arial',
+                fontSize: 14,
+                color: '#ffffff'
+            }).setOrigin(0.5);
+            
+            // 将气泡和文本添加到容器
+            messageContainer.add([bubble, msgText]);
+            messageContainer.setDepth(10);
+            
+            // 添加淡入动画
+            messageContainer.setAlpha(0);
+            this.tweens.add({
+                targets: messageContainer,
+                alpha: 1,
+                duration: 300,
+                ease: 'Power2'
+            });
+            
+            // 2.5-3.8 秒后淡出并移除消息
+            const randomDelay = Phaser.Math.Between(2600, 3800);
+            this.time.delayedCall(randomDelay, () => {
+                this.tweens.add({
+                    targets: messageContainer,
+                    alpha: 0,
+                    duration: 300,
+                    ease: 'Power2',
+                    onComplete: () => {
+                        messageContainer.destroy();
+                    }
+                });
             });
         }
+    }
+
+    private showAdsByPos(posX: number, posY: number) {
+        const items = this.geoItems.filter(b => b.postions.some(p => p.x === posX && p.y === posY));
+        if(items && items.length > 0){
+            items.forEach(item => {
+                const ads = LocaleUtils.getItemsByLangCode(item.advertising, Settings.locale.code);
+                const ad = ads[Math.floor(Math.random() * ads.length)];
+                this.showMessageOnGeoItem(item, ad);
+            });
+        }
+    }
+
+    private showMessageOnHero(msg: string) {
+        if (!this.hero) return;
+
+        // 清理已过期的气泡
+        this.cleanupExpiredBubbles();
+
+        // 创建气泡容器
+        const bubbleContainer = this.add.container(this.hero.x, this.hero.y);
+        bubbleContainer.setDepth(100); // 确保气泡在最上层
+
+        // 计算气泡的垂直偏移量（避免重叠）
+        const baseOffsetY = -40; // 基础偏移量
+        const bubbleSpacing = 25; // 气泡间距
+        const offsetY = baseOffsetY - (this.activeBubbles.length * bubbleSpacing);
+
+        // 创建气泡背景（圆角矩形）
+        const padding = 8;
+        const textStyle = {
+            fontFamily: 'Arial',
+            fontSize: 14,
+            color: '#333333',
+            wordWrap: { width: 200 }
+        };
+        
+        // 先创建文本以获取尺寸
+        const tempText = this.add.text(0, 0, msg, textStyle);
+        const textWidth = tempText.width;
+        const textHeight = tempText.height;
+        tempText.destroy();
+
+        // 创建气泡背景
+        const bubbleWidth = textWidth + padding * 2;
+        const bubbleHeight = textHeight + padding * 2;
+        
+        const bubble = this.add.graphics();
+        bubble.fillStyle(0xffffff, 0.95);
+        bubble.lineStyle(2, 0x666666, 0.8);
+        bubble.fillRoundedRect(-bubbleWidth/2, offsetY - bubbleHeight/2, bubbleWidth, bubbleHeight, 8);
+        bubble.strokeRoundedRect(-bubbleWidth/2, offsetY - bubbleHeight/2, bubbleWidth, bubbleHeight, 8);
+
+        // 创建气泡尾巴（指向角色）
+        const tailSize = 8;
+        bubble.fillStyle(0xffffff, 0.95);
+        bubble.lineStyle(2, 0x666666, 0.8);
+        bubble.beginPath();
+        bubble.moveTo(-tailSize/2, offsetY + bubbleHeight/2);
+        bubble.lineTo(0, offsetY + bubbleHeight/2 + tailSize);
+        bubble.lineTo(tailSize/2, offsetY + bubbleHeight/2);
+        bubble.closePath();
+        bubble.fillPath();
+        bubble.strokePath();
+
+        // 创建文本
+        const messageText = this.add.text(0, offsetY, msg, textStyle);
+        messageText.setOrigin(0.5);
+
+        // 将元素添加到容器
+        bubbleContainer.add([bubble, messageText]);
+
+        // 添加入场动画
+        bubbleContainer.setAlpha(0);
+        bubbleContainer.setScale(0.5);
+        this.tweens.add({
+            targets: bubbleContainer,
+            alpha: 1,
+            scale: 1,
+            duration: 300,
+            ease: 'Back.easeOut'
+        });
+
+        // 创建跟随更新定时器
+        const followTimer = this.time.addEvent({
+            delay: 16, // 约60FPS
+            loop: true,
+            callback: () => {
+                if (this.hero && bubbleContainer.active) {
+                    bubbleContainer.setPosition(this.hero.x, this.hero.y);
+                }
+            }
+        });
+
+        // 创建自动销毁定时器
+        const destroyTimer = this.time.delayedCall(3000, () => {
+            this.removeBubble(bubbleContainer, followTimer);
+        });
+
+        // 添加到活跃气泡列表
+        this.activeBubbles.push({
+            container: bubbleContainer,
+            timer: followTimer,
+            offsetY: offsetY
+        });
+    }
+
+    // 清理已过期的气泡
+    private cleanupExpiredBubbles() {
+        this.activeBubbles = this.activeBubbles.filter(bubble => {
+            if (!bubble.container.active) {
+                bubble.timer.remove();
+                return false;
+            }
+            return true;
+        });
+    }
+
+    // 移除指定气泡
+    private removeBubble(container: Phaser.GameObjects.Container, timer: Phaser.Time.TimerEvent) {
+        // 添加退场动画
+        this.tweens.add({
+            targets: container,
+            alpha: 0,
+            scale: 0.5,
+            duration: 200,
+            ease: 'Back.easeIn',
+            onComplete: () => {
+                container.destroy();
+                timer.remove();
+                
+                // 从活跃列表中移除
+                const index = this.activeBubbles.findIndex(b => b.container === container);
+                if (index !== -1) {
+                    this.activeBubbles.splice(index, 1);
+                }
+            }
+        });
     }
 
     private refreshConsumptionBtns() {
@@ -929,6 +1151,241 @@ export class Game extends Scene
         });
     }
 
+    private findPath(posX: number, posY: number) {
+        // 遍历 DefaultMap.paths 查找包含 posX, posY 的路径
+        const paths = DefaultMap.paths ?? [];
+        const filteredPaths = paths.filter(p => p.nodes.findIndex(n => n.x === posX && n.y === posY) !== -1);
+        const p = filteredPaths[Math.floor(Math.random() * filteredPaths.length)];
+        return p;
+    }
+
+    // 根据移动方向切换行走动画
+    private setAnimationByDirection(dx: number, dy: number) {
+        let anim = 'hero-walk-down';
+        if (Math.abs(dx) >= Math.abs(dy)) {
+            anim = dx >= 0 ? 'hero-walk-right' : 'hero-walk-left';
+        } else {
+            anim = dy >= 0 ? 'hero-walk-down' : 'hero-walk-up';
+        }
+        this.hero.play(anim);
+        return anim;
+    };
+
+    private moveTo(targetX: number, targetY: number, movingCompleted?: () => void) {
+        // 获取角色当前位置
+        const currentX = this.hero.x;
+        const currentY = this.hero.y;
+        
+        // 如果已经在目标位置，立即调用回调并返回
+        if (currentX === targetX && currentY === targetY) {
+            if (movingCompleted) {
+                movingCompleted();
+            }
+            return [];
+        }
+        
+        // 构建路径图：将所有路径节点连接成图
+        const pathGraph = PathUtils.buildPathGraph(DefaultMap.paths);
+        
+        // 使用 A* 算法计算最短路径
+        const path = PathUtils.findShortestPath(
+            { x: currentX, y: currentY },
+            { x: targetX, y: targetY },
+            pathGraph
+        );
+        
+        // 如果找到路径，沿路径移动到目标位置并停止
+        if (path.length > 0) {
+            this.moveHeroAlongPath(path, movingCompleted);
+        } else if (movingCompleted) {
+            // 如果没有找到路径，也要调用回调
+            movingCompleted();
+        }
+    }
+
+    /**
+     * 沿指定路径移动角色到目标位置并停止
+     */
+    private moveHeroAlongPath(path: {x: number, y: number}[], movingCompleted?: () => void) {
+        if (path.length === 0) {
+            if (movingCompleted) {
+                movingCompleted();
+            }
+            return;
+        }
+        
+        let currentIndex = 0;
+        
+        const moveToNextNode = () => {
+            if (currentIndex >= path.length) {
+                // 到达路径终点，停止移动并切换到待机动画
+                const currentAnim = this.hero.anims.currentAnim?.key || 'hero-walk-down';
+                const idleAnim = currentAnim.replace('walk', 'idle');
+                this.hero.play(idleAnim);
+                
+                // 调用移动完成回调
+                if (movingCompleted) {
+                    movingCompleted();
+                }
+                return;
+            }
+            
+            const targetNode = path[currentIndex];
+            const dx = targetNode.x - this.hero.x;
+            const dy = targetNode.y - this.hero.y;
+            
+            // 设置行走动画并获取动画名称
+            const walkAnim = this.setAnimationByDirection(dx, dy);
+            
+            // 移动到下一个节点
+            this.tweens.add({
+                targets: this.hero,
+                x: targetNode.x,
+                y: targetNode.y,
+                duration: 1000,
+                ease: 'Sine.easeInOut',
+                onComplete: () => {
+                    currentIndex++;
+                    // 如果这是最后一个节点，切换到对应的待机动画并调用回调
+                    if (currentIndex >= path.length) {
+                        const idleAnim = walkAnim.replace('walk', 'idle');
+                        this.hero.play(idleAnim);
+                        
+                        // 调用移动完成回调
+                        if (movingCompleted) {
+                            movingCompleted();
+                        }
+                    } else {
+                        // 继续移动到下一个节点
+                        moveToNextNode();
+                    }
+                }
+            });
+        };
+        
+        // 开始移动
+        moveToNextNode();
+    }
+
+    private placeHeroAt(posX: number, posY: number, msg: string, stayInMilliseconds: number = 0) {
+        // 使用回调机制，在移动完成后显示消息
+        this.moveTo(posX, posY, () => {
+            // 移动完成后显示消息
+            this.showMessageOnHero(msg);
+            
+            if(stayInMilliseconds > 0) {
+                // 等待指定的时间
+                this.time.delayedCall(stayInMilliseconds, () => {
+                    this.walkOnRandomPath(posX, posY);
+                });
+            }
+            else this.walkOnRandomPath(posX, posY);
+        });
+    }
+
+    private walkOnRandomPath(posX: number, posY: number) {
+        const randomPath = this.findPath(posX, posY);
+        if (randomPath) {
+            this.pathNodes = randomPath.nodes;
+            const posIndex = this.pathNodes.findIndex(n => n.x === posX && n.y === posY);
+            this.isMovingForward = true;
+            this.pauseMoving = false;
+            this.moveHeroTo(posIndex + 1);
+        }
+    }
+
+    private getNextIndex(currentIdx: number) {
+        if (this.isMovingForward) {
+            // 正向移动：到达最后一个点时切换为反向
+            if (currentIdx === this.pathNodes.length - 1) {
+                this.isMovingForward = false;
+                return currentIdx - 1;
+            }
+            return currentIdx + 1;
+        } else {
+            // 反向移动：到达第一个点时切换为正向
+            if (currentIdx === 0) {
+                this.isMovingForward = true;
+                return currentIdx + 1;
+            }
+            return currentIdx - 1;
+        }
+    };
+
+    private moveHeroTo(targetIdx: number) {
+        const to = this.pathNodes[targetIdx];
+        const speed = 60; // px/s
+        
+        const idleFromWalk = (walkAnim: string) => walkAnim.replace('walk', 'idle');
+
+        const dx = to.x - this.hero.x;
+        const dy = to.y - this.hero.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const walkAnim = this.setAnimationByDirection(dx, dy);
+        this.tweens.add({
+            targets: this.hero,
+            x: to.x,
+            y: to.y,
+            duration: Math.max(200, (dist / speed) * 1000),
+            ease: 'Sine.easeInOut',
+            onComplete: () => {
+                this.hero.play(idleFromWalk(walkAnim));
+                this.showAdsByPos(this.hero.x, this.hero.y);
+                // 到达目标节点后，检查是否需要暂停移动
+                if (this.pauseMoving) {
+                    return;
+                }
+                
+                // 计算下一个目标索引
+                const nextIdx = this.getNextIndex(targetIdx);
+                // 短暂停顿再继续前往下一个节点
+                this.time.delayedCall(2600, () => this.moveHeroTo(nextIdx));
+            }
+        });
+    }
+
+    private installHero() {
+        // 基于 DefaultMap.paths 的节点，驱动角色沿路径循环移动
+        const paths = DefaultMap.paths ?? [];
+        if (!paths.length) {
+            // 无路径数据则回退到静态预览位置
+            const w = this.scale.width;
+            const h = this.scale.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            const fallback = this.add.sprite(cx - 220, cy + 120, 'heroAtlas', 'down_0');
+            fallback.setScale(2);
+            fallback.play('hero-walk-down');
+            fallback.setDepth(90);
+            return;
+        }
+
+        // 随机选择一条可用路径
+        const pathDef = paths[Math.floor(Math.random() * paths.length)];
+        this.pathNodes = pathDef.nodes ?? [];
+
+        if (this.pathNodes.length < 2) {
+            // 节点不足则回退
+            const w = this.scale.width;
+            const h = this.scale.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            const fallback = this.add.sprite(cx - 220, cy + 120, 'heroAtlas', 'down_0');
+            fallback.setScale(2);
+            fallback.play('hero-walk-down');
+            fallback.setDepth(90);
+            return;
+        }
+
+        // 角色初始放在第一个节点
+        this.hero = this.add.sprite(this.pathNodes[0].x, this.pathNodes[0].y, 'heroAtlas', 'down_0');
+        this.hero.setScale(2);
+        this.hero.setDepth(90);
+
+        // 从第二个节点开始移动（初始已在第一个节点）
+        this.moveHeroTo(1);
+    }
+
     checkVictory() {
         if (isVictoryAchieved()) {
             this.scene.start('VictoryReport');
@@ -940,3 +1397,4 @@ export class Game extends Scene
         this.scene.start('GameOver');
     }
 }
+

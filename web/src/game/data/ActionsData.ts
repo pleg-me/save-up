@@ -169,7 +169,7 @@ export const consumptionActions: ConsumptionAction[] = [
         key: "travel",
         buildingKey: "MountainLake",
         cost: 300,
-        happyPoints: 100
+        happyPoints: 66
     },
     {
         type: 'action_consumption',
@@ -183,6 +183,6 @@ export const consumptionActions: ConsumptionAction[] = [
         key: "salon",
         buildingKey: "BeautySalon",
         cost: 50,
-        happyPoints: 100
+        happyPoints: 10
     }
 ];

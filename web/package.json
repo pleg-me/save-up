@@ -1,5 +1,5 @@
 {
-    "name": "template-vue-ts",
+    "name": "save-up",
     "description": "A Phaser 3 TypeScript project template that demonstrates Vue communication and uses Vite for bundling.",
     "version": "1.3.0",
     "repository": {
