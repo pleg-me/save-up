@@ -784,21 +784,8 @@ export class Game extends Scene
     private drawMap() {
         {
             const tileSize = 256;
-            const grid = 3;
-            const sceneSize = 1024;
-            const gap = 48; // 适当的间距，保证布局更清晰
-            const totalSize = grid * tileSize + (grid - 1) * gap;
-            const margin = (sceneSize - totalSize) / 2; // 居中留白
-            const yOffset = -32; // 上移整体位置，抵消视觉偏下的偏差
-            const centerStartX = margin + tileSize / 2;
-            const centerStartY = margin + tileSize / 2 + yOffset;
             const maskKey = this.ensureRadialMaskTexture();
             this.geoItems.forEach((b, i) => {
-                // const row = Math.floor(i / grid);
-                // const col = i % grid;
-                // b.centerX = centerStartX + col * (tileSize + gap);
-                // b.centerY = centerStartY + row * (tileSize + gap);
-                
                 const img = this.add.image(b.centerX, b.centerY, b.key);
                 img.setDepth(5);
                 // 设置唯一名称，便于通过 getByName 获取并高亮
@@ -810,7 +797,7 @@ export class Game extends Scene
 
                 // 在图片下方绘制名称，水平居中
                 const labelYOffset = tileSize / 2 + 10; // 位于图片底部下方 10 像素
-                const label = this.add.text(b.centerX, b.centerY + labelYOffset, b.name, {
+                const label = this.add.text(b.centerX, b.centerY + labelYOffset, `${Settings.SponsorTitle + " " + b.name}`, {
                     fontFamily: 'Arial',
                     fontSize: 14,
                     color: '#ffffff',

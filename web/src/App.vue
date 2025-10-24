@@ -4,8 +4,8 @@ import type Phaser from 'phaser';
 import PhaserGame from './PhaserGame.vue';
 import PlayerInfoPanel from './components/PlayerInfoPanel.vue';
 import SettlementLogsPanel from './components/SettlementLogsPanel.vue';
-import SponsorPanel from './components/SponsorPanel.vue';
 import type { Game } from './game/scenes/Game';
+import SponsorPanel from './components/SponsorPanel.vue';
 
 const phaserRef = ref<any>();
 const inGame = ref(false);
