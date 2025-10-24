@@ -1,0 +1,8 @@
+{
+  "name": "save-up",
+  "compatibility_date": "2025-10-24",
+  "pages": {
+    "build": "npm run build",
+    "directory": "dist"
+  }
+}
