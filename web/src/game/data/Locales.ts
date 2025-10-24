@@ -22,6 +22,9 @@ export const Locales = [
         Building_ShoppingMall: '购物商场',
 
         ReturnMainMenu: '返回主菜单',
+
+        Sponsors: "赞助商",
+        ThankSponsors: "感谢赞助商的支持！",
     },
     {
         code: 'en',
@@ -46,5 +49,8 @@ export const Locales = [
         Building_ShoppingMall: 'Shopping Mall',
 
         ReturnMainMenu: 'Return to Main Menu',
+
+        Sponsors: "Sponsors",
+        ThankSponsors: "Thank Sponsors for their support!",
     },
 ]

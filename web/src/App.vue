@@ -4,6 +4,7 @@ import type Phaser from 'phaser';
 import PhaserGame from './PhaserGame.vue';
 import PlayerInfoPanel from './components/PlayerInfoPanel.vue';
 import SettlementLogsPanel from './components/SettlementLogsPanel.vue';
+import SponsorPanel from './components/SponsorPanel.vue';
 import type { Game } from './game/scenes/Game';
 
 const phaserRef = ref<any>();
@@ -29,6 +30,7 @@ onMounted(() => {
     </main>
     <aside class="right-panel">
       <SettlementLogsPanel v-if="inGame" />
+      <SponsorPanel />
     </aside>
   </div>
 </template>
