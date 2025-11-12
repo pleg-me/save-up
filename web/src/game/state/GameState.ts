@@ -1,5 +1,6 @@
-import { IDENTITIES, type Identity } from '../data/identities';
-import { GOALS, type Goal } from '../data/goals';
+import { getIdentityName, IDENTITIES, type Identity } from '../data/identities';
+import { getGoalName, GOALS, type Goal } from '../data/goals';
+import { Settings } from '../data/Settings';
 
 export type Accounts = {
   wallet: number;
@@ -291,8 +292,8 @@ export function isVictoryAchieved() {
 }
 
 export function getVictoryReport(): VictoryReport {
-  const identityName = gameState.identity?.name ?? '未知身份';
-  const goalName = gameState.goal?.name ?? '未知目标';
+  const identityName = getIdentityName(gameState.identity);
+  const goalName = getGoalName(gameState.goal);
   const goalAmount = gameState.goal?.amount ?? 0;
   const months = gameState.month;
   const totalSavings = gameState.accounts.savings;
@@ -346,14 +347,16 @@ export function depositEmergency(amount: number) {
 }
 
 export function generateNecessaryExpense(): NecessaryExpense {
-  const names = ['手机话费', '水电费', '学习资料'];
+  const names = Settings.lang === 'en' ? ['Phone Bill', 'Electricity Bill', 'Study Material']
+    : ['手机话费', '水电费', '学习资料'];
   const name = names[Math.floor(Math.random() * names.length)];
   const cost = 40 + Math.floor(Math.random() * 81); // 40-120
   return { type: 'necessary', name, cost, paid: false };
 }
 
 export function generateUnexpectedEvent(): UnexpectedEvent {
-  const names = ['看病费用', '家电维修', '交通事故'];
+  const names = Settings.lang === 'en' ? ['Medical Expense', 'Home Appliance Repair', 'Traffic Accident']
+    : ['看病费用', '家电维修', '交通事故'];
   const name = names[Math.floor(Math.random() * names.length)];
   const cost = 100 + Math.floor(Math.random() * 201); // 100-300
   return { type: 'unexpected', name, cost, resolved: false };

@@ -2,6 +2,9 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { EventBus } from '../game/EventBus';
 import { gameState, type Accounts } from '../game/state/GameState';
+import { getIdentityName } from '../game/data/identities';
+import { getGoalName } from '../game/data/goals';
+import { Settings } from '../game/data/Settings';
 
 type InfoSnapshot = {
   month: number;
@@ -14,26 +17,26 @@ type InfoSnapshot = {
 
 const info = ref<InfoSnapshot>({
   month: gameState.month,
-  identity: gameState.identity ? { name: gameState.identity.name } : undefined,
-  goal: gameState.goal ? { name: gameState.goal.name, amount: gameState.goal.amount } : undefined,
+  identity: gameState.identity ? { name: getIdentityName(gameState.identity) } : undefined,
+  goal: gameState.goal ? { name: getGoalName(gameState.goal), amount: gameState.goal.amount } : undefined,
   accounts: { ...gameState.accounts },
   ap: gameState.ap,
   mood: gameState.mood,
 });
 
 const getMoodInfo = (v = 100) => {
-  if (v <= 60) return { label: '绝望', color: '#ff4d4f' };
-  if (v <= 80) return { label: '难过', color: '#faad14' };
-  if (v <= 120) return { label: '平静', color: '#1890ff' };
-  if (v <= 140) return { label: '愉悦', color: '#52c41a' };
-  return { label: '快乐', color: '#73d13d' };
+  if (v <= 60) return { label: Settings.locale.Mood_Despair, color: '#ff4d4f' };
+  if (v <= 80) return { label: Settings.locale.Mood_Sad, color: '#faad14' };
+  if (v <= 120) return { label: Settings.locale.Mood_Calm, color: '#1890ff' };
+  if (v <= 140) return { label: Settings.locale.Mood_Pleasure, color: '#52c41a' };
+  return { label: Settings.locale.Mood_Happy, color: '#73d13d' };
 };
 
 const onUpdate = () => {
   info.value = {
     month: gameState.month,
-    identity: gameState.identity ? { name: gameState.identity.name } : undefined,
-    goal: gameState.goal ? { name: gameState.goal.name, amount: gameState.goal.amount } : undefined,
+    identity: gameState.identity ? { name: getIdentityName(gameState.identity) } : undefined,
+    goal: gameState.goal ? { name: getGoalName(gameState.goal), amount: gameState.goal.amount } : undefined,
     accounts: { ...gameState.accounts },
     ap: gameState.ap,
     mood: gameState.mood,
@@ -66,14 +69,14 @@ onUnmounted(() => {
   <div class="panel">
     <div class="header">
       <div class="title-row">
-        <span class="title">玩家信息</span>
+        <span class="title">{{ Settings.locale.PlayerInfo }}</span>
       </div>
       <div class="sub">
-        <span class="label">身份：</span>
-        <strong class="value">{{ info.identity?.name ?? '未知身份' }}</strong>
+        <span class="label">{{ Settings.locale.Identity + ': ' }}</span>
+        <strong class="value">{{ info.identity?.name ?? Settings.locale.Unknown }}</strong>
         <span class="dot">•</span>
-        <span class="label">目标：</span>
-        <strong class="value">{{ info.goal?.name ?? '未知目标' }}</strong>
+        <span class="label">{{ Settings.locale.Goal + ': ' }}</span>
+        <strong class="value">{{ info.goal?.name ?? Settings.locale.Unknown }}</strong>
         <!-- <span class="goal-amt">（${{ info.goal?.amount ?? 0 }}）</span> -->
       </div>
     </div>
@@ -82,19 +85,19 @@ onUnmounted(() => {
 
     <div class="stats-grid">
       <div class="stat-card wallet">
-        <div class="stat-label">💼 钱包</div>
+        <div class="stat-label">💼 {{ Settings.locale.Wallet }}</div>
         <div class="stat-value">${{ info.accounts.wallet }}</div>
       </div>
       <div class="stat-card emergency">
-        <div class="stat-label">🆘 应急基金</div>
+        <div class="stat-label">🚨 {{ Settings.locale.EmergencyFund }}</div>
         <div class="stat-value">${{ info.accounts.emergencyFund }}</div>
       </div>
       <div class="stat-card savings">
-        <div class="stat-label">🏦 储蓄</div>
+        <div class="stat-label">🏦 {{ Settings.locale.Savings }}</div>
         <div class="stat-value">${{ info.accounts.savings }}</div>
       </div>
       <div class="stat-card investment">
-        <div class="stat-label">📈 投资</div>
+        <div class="stat-label">📈 {{ Settings.locale.Investment }}</div>
         <div class="stat-value">${{ info.accounts.investment }}</div>
       </div>
     </div>
@@ -102,7 +105,7 @@ onUnmounted(() => {
     <div class="divider" />
 
     <div class="row goal">
-      <span class="label">目标：${{ info.goal?.amount ?? 0 }}</span>
+      <span class="label">{{ Settings.locale.Goal + ": $" + (info.goal?.amount ?? 0) }}</span>
     </div>
     <div class="goal-bar">
       <div class="goal-fill" :style="{ width: goalPercent + '%'}" />
@@ -110,7 +113,7 @@ onUnmounted(() => {
     </div>
 
     <div class="row mood">
-      <span class="label">心情</span>
+      <span class="label">{{ Settings.locale.Mood }}</span>
     </div>
     <div class="mood-bar">
       <div class="mood-fill" :style="{ width: moodPercent + '%', background: getMoodInfo(info.mood).color }" />
@@ -120,9 +123,9 @@ onUnmounted(() => {
     <div class="divider" />
 
     <div class="footer">
-      <span class="badge month">第 {{ info.month }} 月</span>
+      <span class="badge month">{{ Settings.lang === 'en' ? `Month #${info.month}` : `第 ${info.month} 月` }}</span>
       <span class="ap-wrap">
-        <span class="label">可用行动点数：</span>
+        <span class="label">{{ Settings.locale.ActionPoints + ': ' }}</span>
         <span class="badge ap">{{ info.ap }}</span>
       </span>
     </div>

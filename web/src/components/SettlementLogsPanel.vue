@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { EventBus } from '../game/EventBus';
 import { gameState, type SettlementSummary } from '../game/state/GameState';
+import { Settings } from '../game/data/Settings';
 
 const logs = ref<SettlementSummary[]>([]);
 const containerRef = ref<HTMLDivElement | null>(null);
@@ -29,7 +30,7 @@ onUnmounted(() => {
   EventBus.off('logs-updated', updateLogs);
 });
 
-const srcMap: Record<string, string> = { emergency: '应急', wallet: '钱包', mood: '心情' };
+const srcMap: Record<string, string> = { emergency: Settings.locale.Emergency, wallet: Settings.locale.Wallet, mood: Settings.locale.Mood };
 </script>
 
 <template>
@@ -37,19 +38,19 @@ const srcMap: Record<string, string> = { emergency: '应急', wallet: '钱包', 
     <div class="accordion">
       <button class="acc-header" @click="isOpen = !isOpen">
         <span class="chev">{{ isOpen ? '▾' : '▸' }}</span>
-        <span class="title">结算日志</span>
+        <span class="title">{{ Settings.locale.SettlementLogs }}</span>
       </button>
       <div v-show="isOpen" class="acc-body">
         <div ref="containerRef" class="logs">
           <div v-for="s in logs" :key="s.month" class="log">
-            <span class="t">[M{{ s.month }}] 利息 </span>
+            <span class="t">[M{{ s.month }}] {{ Settings.locale.Interest }} </span>
             <span :style="{ color: s.savingsInterest > 0 ? GREEN : GREY }">+${{ s.savingsInterest }}</span>
-            <span class="t">，投资 </span>
+            <span class="t">{{ ", " + Settings.locale.Investment }} </span>
             <span :style="{ color: s.investmentDelta >= 0 ? GREEN : RED }">{{ s.investmentDelta >= 0 ? '+' : '-' }}${{ Math.abs(s.investmentDelta) }}</span>
-            <span class="t">，滞纳 </span>
+            <span class="t">{{ ", " + Settings.locale.LatePenalty }} </span>
             <span :style="{ color: s.latePenalty > 0 ? RED : GREY }">{{ s.latePenalty > 0 ? '-' : '' }}${{ s.latePenalty || 0 }}</span>
-            <span class="t">；意外：</span>
-            <span class="t">{{ (s.unexpectedResolutions?.length ?? 0) > 0 ? s.unexpectedResolutions.map(u => `${u.name} $${u.cost}->${srcMap[u.source]}`).join('；') : '无意外' }}</span>
+            <span class="t">{{ "; " + Settings.locale.Unexpected + ": " }}</span>
+            <span class="t">{{ (s.unexpectedResolutions?.length ?? 0) > 0 ? s.unexpectedResolutions.map(u => `${u.name} $${u.cost}->${srcMap[u.source]}`).join('; ') : Settings.locale.NA }}</span>
           </div>
         </div>
       </div>

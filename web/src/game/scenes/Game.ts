@@ -1,7 +1,7 @@
 import { EventBus } from '../EventBus';
 import { Scene } from 'phaser';
 import { gameState, initNewGame, startMonth, endMonth, depositToSavings, invest, partTime, study, consumeCash, depositEmergency, payFirstNecessaryExpense, resolveFirstUnexpected, isVictoryAchieved } from '../state/GameState';
-import { ConsumptionAction, consumptionActions } from '../data/ActionsData';
+import { ConsumptionAction, consumptionActions, getConsumptionActionRandom, getConsumptionActionText } from '../data/ActionsData';
 import { DefaultMap } from '../data/DefaultMap';
 import { IGeoItem } from '../../models/GeoItem';
 import { PathUtils } from '../../tools/PathUtils';
@@ -104,7 +104,7 @@ export class Game extends Scene
         const endMargin = 16;
         const endX = this.camera.width - endMargin;
         const endY = this.camera.height - endMargin;
-        const endMonthBtn = this.add.text(endX, endY, '▶ 结束本月',
+        const endMonthBtn = this.add.text(endX, endY, Settings.locale.NextMonth,
         { fontFamily: 'Arial', fontSize: 22, color: '#ffffff', backgroundColor: '#0D9800', padding: { left: 14, right: 14, top: 6, bottom: 6 } })
             .setOrigin(1, 1)
             .setDepth(40)
@@ -483,7 +483,7 @@ export class Game extends Scene
 
         // 顶部水平排列：储蓄、投资、学习、兼职、应急基金存入
         // 顶部动作按钮：收拢到一个带边框与背景色的长条容器中
-        const bSavings = mkActionBtnAt(topStartX + topSpacing * 0, topY, '💰储蓄', 1, () => {
+        const bSavings = mkActionBtnAt(topStartX + topSpacing * 0, topY, Settings.locale.ActionSave, 1, () => {
             openAmountDialog('储蓄', (amt) => {
                 const ok = depositToSavings(amt);
                 if (ok) {
@@ -494,7 +494,7 @@ export class Game extends Scene
                 return ok;
             });
         });
-        const bInvest = mkActionBtnAt(topStartX + topSpacing * 1, topY, '📉投资📈', 1, () => {
+        const bInvest = mkActionBtnAt(topStartX + topSpacing * 1, topY, Settings.locale.ActionInvest, 1, () => {
             openAmountDialog('投资', (amt) => {
                 const ok = invest(amt);
                 if (ok) {
@@ -505,20 +505,20 @@ export class Game extends Scene
                 return ok;
             });
         });
-        const bStudy = mkActionBtnAt(topStartX + topSpacing * 2 + 15, topY, '📚学习', 2, () => {
+        const bStudy = mkActionBtnAt(topStartX + topSpacing * 2 + 15, topY, Settings.locale.ActionStudy, 2, () => {
             if (study()) {
                 refreshActionButtons();
                 EventBus.emit('game-state-updated');
             }
         });
-        const bPartTime = mkActionBtnAt(topStartX + topSpacing * 3 + 15, topY, '👷‍♂️兼职', 2, () => {
+        const bPartTime = mkActionBtnAt(topStartX + topSpacing * 3 + 15, topY, Settings.locale.ActionPartTime, 2, () => {
             const earn = partTime();
             if (earn) {
                 refreshActionButtons();
                 EventBus.emit('game-state-updated');
             }
         });
-        const bEmergency = mkActionBtnAt(topStartX + topSpacing * 4 + 15, topY, '🚨应急基金存入', 1, () => {
+        const bEmergency = mkActionBtnAt(topStartX + topSpacing * 4 + 15, topY, Settings.locale.ActionDepositEmergencyFund, 1, () => {
             openAmountDialog('应急基金存入', (amt) => {
                 const ok = depositEmergency(amt);
                 if (ok) {
@@ -541,7 +541,7 @@ export class Game extends Scene
         // 底部的N个消费按钮
         consumptionActions.forEach((ca, i) => {
             // 消费按钮消耗0AP
-            const cbtn = mkConsumptionActionBtnAt(bottomStartX + bottomSpacing * i, bottomY, ca.text, 0, () => { this.handleConsumption(ca); }, undefined, fascinateBtnStyle, consuptionActionButtons);
+            const cbtn = mkConsumptionActionBtnAt(bottomStartX + bottomSpacing * i, bottomY, getConsumptionActionText(ca), 0, () => { this.handleConsumption(ca); }, undefined, fascinateBtnStyle, consuptionActionButtons);
             // 记录消费成本用于可用性与悬停控制
             cbtn.setData('consCost', ca.cost);
             this.consumptionBtns.push(cbtn);
@@ -611,7 +611,7 @@ export class Game extends Scene
         }
 
         const neX = 10, neY = 10;
-        let payBtn: Phaser.GameObjects.Text = mkHighlightActionBtnAt(neX, neY, '支付必要支出*', 1, () => {
+        let payBtn: Phaser.GameObjects.Text = mkHighlightActionBtnAt(neX, neY, Settings.locale.ActionPayNecessaryExpense ?? 'Pay Necessary Expense *', 1, () => {
             if (payFirstNecessaryExpense()) {
                 renderNecessaryList();
                 EventBus.emit('game-state-updated');
@@ -647,7 +647,7 @@ export class Game extends Scene
         const lastY = renderNecessaryList();
         const ueX = 880, ueY = 10;
         // 意外事件列表与处理按钮（按钮在上，信息在下）
-        let resolveUnexpectedBtn: Phaser.GameObjects.Text = mkHighlightActionBtnAt(ueX, ueY, '处理意外*', 1, () => {
+        let resolveUnexpectedBtn: Phaser.GameObjects.Text = mkHighlightActionBtnAt(ueX, ueY, Settings.locale.ActionResolveUnexpected ?? 'Resolve Unexpected Expense *', 1, () => {
             if (resolveFirstUnexpected()) {
                 renderUnexpectedList();
                 EventBus.emit('game-state-updated');
@@ -672,8 +672,9 @@ export class Game extends Scene
             this.unexpectedList.length = 0;
             let y = unexpectedY;
             gameState.unexpected.forEach((e) => {
-                const src = e.source === 'emergency' ? '应急' : e.source === 'wallet' ? '钱包' : e.source === 'mood' ? '心情' : '';
-                const label = `${e.name} $${e.cost} ${e.resolved ? `（已处理${src ? ' - ' + src : ''}）` : ''}`;
+                const src = e.source === 'emergency' ? Settings.locale.Emergency
+                    : e.source === 'wallet' ? Settings.locale.Wallet : e.source === 'mood' ? Settings.locale.Mood : '';
+                const label = `${e.name} $${e.cost} ${e.resolved ? `(√ ${src ? ' - ' + src : ''})` : ''}`;
                 const t = this.add.text(ueX, y, label, { fontFamily: 'Arial', fontSize: 14, color: '#eee' });
                 // 列表文本层级低于按钮，避免遮挡
                 t.setDepth(10);
@@ -797,7 +798,8 @@ export class Game extends Scene
 
                 // 在图片下方绘制名称，水平居中
                 const labelYOffset = tileSize / 2 + 10; // 位于图片底部下方 10 像素
-                const label = this.add.text(b.centerX, b.centerY + labelYOffset, `${Settings.SponsorTitle + " " + b.name}`, {
+                const bn = (Settings.locale as any)[`Building_${b.key}`] ?? b.name;
+                const label = this.add.text(b.centerX, b.centerY + labelYOffset, `${Settings.SponsorTitle + " " + bn}`, {
                     fontFamily: 'Arial',
                     fontSize: 14,
                     color: '#ffffff',
@@ -816,8 +818,8 @@ export class Game extends Scene
         const geoItem = this.geoItems.find(b => b.key === action.buildingKey);
         if(geoItem){
             this.highlightGeoItem(geoItem);
-            
-            const msg = action.random[Math.floor(Math.random() * action.random.length)];
+            const car = getConsumptionActionRandom(action);
+            const msg = car[Math.floor(Math.random() * car.length)];
             const newPos = geoItem.postions[Math.floor(Math.random() * geoItem.postions.length)];
             this.placeHeroAt(newPos.x, newPos.y, msg, 3000);
         }

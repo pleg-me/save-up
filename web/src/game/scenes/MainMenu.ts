@@ -1,7 +1,7 @@
 import { GameObjects, Scene } from 'phaser';
 import { EventBus } from '../EventBus';
 import { initNewGame } from '../state/GameState';
-import { Settings } from '../data/Settings';
+import { Settings, switchLang } from '../data/Settings';
 
 export class MainMenu extends Scene
 {
@@ -43,6 +43,46 @@ export class MainMenu extends Scene
         startText.on('pointerdown', () => {
             initNewGame();
             this.changeScene();
+        });
+
+        const ttX = cx;
+        const ttY = cy + 200;
+        const trackW = 120;
+        const trackH = 30;
+        const handleR = 13;
+        const track = this.add.rectangle(ttX, ttY, trackW, trackH, 0x345).setStrokeStyle(2, 0xffffff).setDepth(100).setRounded(5);
+        const handle = this.add.circle(ttX - trackW / 2 + handleR + 2, ttY, handleR, 0xffffff).setDepth(101);
+        // const langLabel = this.add.text(ttX, ttY - 28, Settings.locale.name, {
+        //     fontFamily: 'Arial', fontSize: 18, color: '#ffffff',
+        //     stroke: '#000000', strokeThickness: 3,
+        //     align: 'center'
+        // }).setOrigin(0.5).setDepth(100);
+        const leftLabel = this.add.text(ttX - trackW / 2 - 50, ttY, '简体中文', {
+            fontFamily: 'Arial', fontSize: 16, color: '#ffffff',
+            stroke: '#000000', strokeThickness: 2,
+            align: 'center'
+        }).setOrigin(0.5).setDepth(100);
+        const rightLabel = this.add.text(ttX + trackW / 2 + 50, ttY, 'English', {
+            fontFamily: 'Arial', fontSize: 16, color: '#aaaaaa',
+            stroke: '#000000', strokeThickness: 2,
+            align: 'center'
+        }).setOrigin(0.5).setDepth(100);
+        const toggleArea = this.add.zone(ttX, ttY, trackW, trackH).setInteractive({ useHandCursor: true });
+        const updateToggle = () => {
+            const isEn = Settings.lang === 'en';
+            const targetX = isEn ? ttX + trackW / 2 - handleR - 2 : ttX - trackW / 2 + handleR + 2;
+            this.tweens.add({ targets: handle, x: targetX, duration: 140, ease: 'Quad.easeOut' });
+            track.setFillStyle(isEn ? 0x2d83d3 : 0x1f6fb2, 1);
+            leftLabel.setStyle({ color: isEn ? '#aaaaaa' : '#ffffff' });
+            rightLabel.setStyle({ color: isEn ? '#ffffff' : '#aaaaaa' });
+            //langLabel.setText(Settings.locale.name);
+            this.title.setText(Settings.locale.SubTitle);
+            startText.setText(Settings.locale.Menu_NewGame);
+        };
+        updateToggle();
+        toggleArea.on('pointerdown', () => {
+            switchLang();
+            updateToggle();
         });
 
         this.input.keyboard?.on('keydown-SPACE', () => {

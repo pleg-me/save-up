@@ -24,7 +24,7 @@ export class VictoryReport extends Scene {
     this.background.setDisplaySize(w, h);
     this.background.setAlpha(0.35);
 
-    const title = this.add.text(cx, 120, '🎉 通关！复盘报告', {
+    const title = this.add.text(cx, 120, Settings.locale.ReportTitle, {
       fontFamily: 'Arial Black', fontSize: 40, color: '#ffffff', stroke: '#000000', strokeThickness: 8,
     }).setOrigin(0.5).setDepth(10);
 
@@ -36,17 +36,17 @@ export class VictoryReport extends Scene {
       return { l, v };
     };
 
-    line(200, '身份', report.identityName);
-    line(240, '目标', `${report.goalName}（$${report.goalAmount}）`);
-    line(280, '用时', `${report.months} 个月`);
-    line(320, '最终进度', `$${report.progress}（储蓄 $${report.totalSavings} + 投资 $${report.totalInvestment}）`);
-    line(360, '储蓄率', `${Math.round(report.savingsRate * 100)}%`);
-    line(400, '投资胜率', `${Math.round(report.investWinRate * 100)}%（胜 ${report.investWins} / 负 ${report.investLosses}）`);
+    line(200, `${Settings.locale.Identity}`, report.identityName);
+    line(240, `${Settings.locale.Goal}`, `${report.goalName}（$${report.goalAmount}）`);
+    line(280, `${Settings.locale.Months}`, `${report.months} 个月`);
+    line(320, `${Settings.locale.Progress}`, `$${report.progress}（${Settings.locale.Savings} $${report.totalSavings} + ${Settings.locale.Investment} $${report.totalInvestment}）`);
+    line(360, `${Settings.locale.SavingsRate}`, `${Math.round(report.savingsRate * 100)}%`);
+    line(400, `${Settings.locale.InvestWinRate}`, `${Math.round(report.investWinRate * 100)}%（${Settings.locale.Win} ${report.investWins} / ${Settings.locale.Loss} ${report.investLosses}）`);
 
     const u = report.unexpectedBySource;
-    line(460, '意外抵消·应急', `${u.emergency.count} 次，总计 $${u.emergency.amount}`);
-    line(500, '意外抵消·钱包', `${u.wallet.count} 次，总计 $${u.wallet.amount}`);
-    line(540, '意外抵消·心情', `${u.mood.count} 次，总计 $${u.mood.amount}`);
+    line(460, `${Settings.locale.HandlingUnexpected}·${Settings.locale.Emergency}`, `x${u.emergency.count}  ${Settings.locale.Total} $${u.emergency.amount}`);
+    line(500, `${Settings.locale.HandlingUnexpected}·${Settings.locale.Wallet}`, `x${u.wallet.count}  ${Settings.locale.Total} $${u.wallet.amount}`);
+    line(540, `${Settings.locale.HandlingUnexpected}·${Settings.locale.Mood}`, `x${u.mood.count}  ${Settings.locale.Total} $${u.mood.amount}`);
 
     // 操作按钮
     const btnStyle: Phaser.Types.GameObjects.Text.TextStyle = {

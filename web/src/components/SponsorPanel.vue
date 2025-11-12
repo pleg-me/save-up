@@ -25,7 +25,7 @@ const openLink = (url: string) => {
           :key="link.name"
           class="link-button"
           @click="openLink(link.url)"
-          :title="`访问 ${link.name}`"
+          :title="`${Settings.locale.Visit} ${link.name}`"
         >
           <span class="link-icon">🔗</span>
           <span class="link-name">{{ link.name }}</span>

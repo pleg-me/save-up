@@ -34,7 +34,7 @@ export class Preloader extends Scene
         //  Load the assets for the game - Replace with your own assets
         this.load.setPath('assets');
 
-        this.load.image('logo', `logo_${Settings.locale.code}.png`);
+        this.load.image('logo', `logo_en.png`);
         this.load.image('star', 'star.png');
         // 已移除 SVG 角色资源加载，角色改为运行时生成 PNG Atlas
 
