@@ -159,7 +159,7 @@ export const consumptionActions: ConsumptionAction[] = [
     {
         type: 'action_consumption',
         en: {
-            text: 'Have a drink🥤',
+            text: 'Drink 🥤',
             random: [
                 'Enjoyed a cup of coffee, sparkling!',
                 'Tasted fresh juice, full of vitamins!',
@@ -184,7 +184,7 @@ export const consumptionActions: ConsumptionAction[] = [
     {
         type: 'action_consumption',
         en: {
-            text: 'Have a dessert🍦',
+            text: 'Dessert 🍦',
             random: [
                 'Tasted a fine cake, perfect sweetness!',
                 'Enjoyed a refreshing ice cream, so refreshing!',
@@ -209,7 +209,7 @@ export const consumptionActions: ConsumptionAction[] = [
     {
         type: 'action_consumption',
         en: {
-            text: 'Watch a movie🎥',
+            text: 'Movie 🎥',
             random: [
                 'Watched a thrilling action movie, adrenaline pumping!',
                 'Enjoyed a romantic love story, full of love!',
@@ -234,7 +234,7 @@ export const consumptionActions: ConsumptionAction[] = [
     {
         type: 'action_consumption',
         en: {
-            text: 'Have a trip🚗',
+            text: 'Trip 🚗',
             random: [
                 'Went on a short trip, full of fun!',
                 'Explored local culture, broaden horizons!',
@@ -259,7 +259,7 @@ export const consumptionActions: ConsumptionAction[] = [
     {
         type: 'action_consumption',
         en: {
-            text: 'Have a beauty salon💅',
+            text: 'Beauty salon💅',
             random: [
                 'For a date!',
                 'To love oneself~',
