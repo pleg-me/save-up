@@ -134,7 +134,7 @@ export class Game extends Scene
             });
 
         // 顶部行动按钮布局参数（水平排列）
-        const topStartX = 300;
+        const topStartX = 260;
         const topY = 16;
         const topSpacing = 90;
         const bottomStartX = 60;
@@ -304,7 +304,8 @@ export class Game extends Scene
                 //     return;
                 // }
                 // onClick();
-                handleHighlightBtcClick(group, cost, disabledByRule, onClick);
+                handleHighlightBtcClick(group, cost, isEnabled ? !isEnabled() : false, onClick);
+                
             }).on('pointerover', () => {
                 this.tweens.add({ targets: group, scale: 1.08, duration: 120, ease: 'Quad.easeOut' });
             }).on('pointerout', () => {
@@ -331,7 +332,7 @@ export class Game extends Scene
                     //     return;
                     // }
                     // onClick();
-                    handleHighlightBtcClick(group, cost, disabledByRule, onClick);
+                    handleHighlightBtcClick(group, cost, isEnabled ? !isEnabled() : false, onClick);
                 });
 
             // 标记与引用，刷新逻辑可访问
@@ -645,7 +646,7 @@ export class Game extends Scene
 
         // 首次渲染必要支出列表（确保在按钮之后，以免被按钮覆盖）
         const lastY = renderNecessaryList();
-        const ueX = 880, ueY = 10;
+        const ueX = 850, ueY = 10;
         // 意外事件列表与处理按钮（按钮在上，信息在下）
         let resolveUnexpectedBtn: Phaser.GameObjects.Text = mkHighlightActionBtnAt(ueX, ueY, Settings.locale.ActionResolveUnexpected ?? 'Resolve Unexpected Expense *', 1, () => {
             if (resolveFirstUnexpected()) {
@@ -1386,4 +1387,3 @@ export class Game extends Scene
         this.scene.start('GameOver');
     }
 }
-
